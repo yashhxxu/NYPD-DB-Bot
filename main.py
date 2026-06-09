@@ -27,36 +27,36 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
-
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
-
 
 def has_role(interaction: discord.Interaction, role_name: str):
     return any(role.name == role_name for role in interaction.user.roles)
 
-
 def is_leadership(interaction: discord.Interaction):
     return has_role(interaction, LEADERSHIP_ROLE)
 
-
 def is_agent(interaction: discord.Interaction):
     return has_role(interaction, AGENT_ROLE)
-
 
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
 
-
 @bot.tree.command(name="promote", description="Promote a member")
 @app_commands.check(is_leadership)
-async def promote(interaction: discord.Interaction, user: discord.Member, rank: discord.Role, reason: str):
+async def promote(
+    interaction: discord.Interaction,
+    user: discord.Member,
+    rank: discord.Role,
+    reason: str,
+    notes: str = "No notes provided."
+):
     await interaction.response.defer()
 
     try:
-        await user.add_roles(rank)
+        await user.add_roles(rank, reason=f"Promotion issued by {interaction.user}")
 
         embed = discord.Embed(
             title="Promotion Issue",
@@ -65,6 +65,7 @@ async def promote(interaction: discord.Interaction, user: discord.Member, rank: 
                 f"• **User:** {user.mention}\n\n"
                 f"• **New Rank:** {rank.mention}\n\n"
                 f"• **Reason:** {reason}\n\n"
+                f"• **Notes:** {notes}\n\n"
                 f"***Issued by:*** {interaction.user.mention}\n\n"
                 "Remember,\n"
                 "***\"With great power, comes great responsibility.\"***"
@@ -77,28 +78,34 @@ async def promote(interaction: discord.Interaction, user: discord.Member, rank: 
 
         await interaction.followup.send(content=user.mention, embed=embed)
 
-    except discord.Forbidden:
+    except Exception as e:
         await interaction.followup.send(
-            "❌ I cannot give that role. Move my bot role above that role and give me Manage Roles.",
+            f"❌ Error while running promotion command:\n```{e}```",
             ephemeral=True
         )
 
-
 @bot.tree.command(name="infract", description="Issue an infraction")
 @app_commands.check(is_leadership)
-async def infract(interaction: discord.Interaction, user: discord.Member, type: discord.Role, reason: str):
+async def infract(
+    interaction: discord.Interaction,
+    user: discord.Member,
+    infraction_type: discord.Role,
+    reason: str,
+    notes: str = "No notes provided."
+):
     await interaction.response.defer()
 
     try:
-        await user.add_roles(type)
+        await user.add_roles(infraction_type, reason=f"Infraction issued by {interaction.user}")
 
         embed = discord.Embed(
             title="Infraction Issue",
             description=(
                 "*An infraction has been issued after careful review by DB Leadership.*\n\n"
                 f"• **User:** {user.mention}\n\n"
-                f"• **Type:** {type.mention}\n\n"
+                f"• **Type:** {infraction_type.mention}\n\n"
                 f"• **Reason:** {reason}\n\n"
+                f"• **Notes:** {notes}\n\n"
                 f"***Issued by:*** {interaction.user.mention}"
             ),
             color=discord.Color.red()
@@ -109,12 +116,11 @@ async def infract(interaction: discord.Interaction, user: discord.Member, type: 
 
         await interaction.followup.send(content=user.mention, embed=embed)
 
-    except discord.Forbidden:
+    except Exception as e:
         await interaction.followup.send(
-            "❌ I cannot give that infraction role. Move my bot role above that role and give me Manage Roles.",
+            f"❌ Error while running infraction command:\n```{e}```",
             ephemeral=True
         )
-
 
 @bot.tree.command(name="deployment", description="Issue an NCIS deployment")
 @app_commands.check(is_leadership)
@@ -158,25 +164,8 @@ async def deployment(interaction: discord.Interaction, location: str, starting_t
         embed=embed
     )
 
-
 @bot.tree.command(name="incidentlog", description="Create an NCIS incident log")
 @app_commands.check(is_agent)
-@app_commands.describe(
-    agent_name="Agent name",
-    location="Incident location",
-    report="Full incident report",
-    marker1="Optional marker 1",
-    marker2="Optional marker 2",
-    marker3="Optional marker 3",
-    marker4="Optional marker 4",
-    marker5="Optional marker 5",
-    marker6="Optional marker 6",
-    marker7="Optional marker 7",
-    marker8="Optional marker 8",
-    marker9="Optional marker 9",
-    marker10="Optional marker 10",
-    marker11="Optional marker 11"
-)
 async def incidentlog(
     interaction: discord.Interaction,
     agent_name: str,
@@ -196,12 +185,9 @@ async def incidentlog(
 ):
     await interaction.response.defer()
 
-    markers = [
-        marker1, marker2, marker3, marker4, marker5, marker6,
-        marker7, marker8, marker9, marker10, marker11
-    ]
-
+    markers = [marker1, marker2, marker3, marker4, marker5, marker6, marker7, marker8, marker9, marker10, marker11]
     marker_text = ""
+
     for index, marker in enumerate(markers, start=1):
         if marker:
             marker_text += f"• **Marker {index}:** {marker}\n"
@@ -213,7 +199,7 @@ async def incidentlog(
         title="NCIS Incident Log",
         description=(
             "*An official NCIS incident report has been filed for bureau records. "
-            "All submitted information is to be treated as operational documentation and reviewed with professionalism.*\n\n"
+            "All submitted information is to be treated as operational documentation.*\n\n"
             f"• **Agent Name:** {agent_name}\n\n"
             f"• **Location:** {location}\n\n"
             f"• **Report:** {report}\n\n"
@@ -229,16 +215,8 @@ async def incidentlog(
 
     await interaction.followup.send(embed=embed)
 
-
 @bot.tree.command(name="arrestlog", description="Create an NCIS arrest log")
 @app_commands.check(is_agent)
-@app_commands.describe(
-    arresting_agent="Arresting agent",
-    assisting_agent="Assisting agent",
-    suspect_name="Suspect's name",
-    crime_committed="Crime committed",
-    mugshot="Attach a mugshot image"
-)
 async def arrestlog(
     interaction: discord.Interaction,
     arresting_agent: str,
@@ -273,23 +251,21 @@ async def arrestlog(
 
     await interaction.followup.send(embed=embed)
 
-
 @promote.error
 @infract.error
 @deployment.error
 @incidentlog.error
 @arrestlog.error
-async def permission_error(interaction: discord.Interaction, error):
+async def command_error(interaction: discord.Interaction, error):
     if isinstance(error, app_commands.CheckFailure):
         message = "❌ You do not have permission to use this command."
     else:
-        message = "❌ Something went wrong while running this command."
+        message = f"❌ Command error:\n```{error}```"
 
     if interaction.response.is_done():
         await interaction.followup.send(message, ephemeral=True)
     else:
         await interaction.response.send_message(message, ephemeral=True)
-
 
 if TOKEN is None:
     raise ValueError("DISCORD_TOKEN is missing in Render Environment Variables.")
