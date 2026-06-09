@@ -7,7 +7,7 @@ from threading import Thread
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-LEADERSHIP_ROLE = "DB | Leadership"
+LEADERSHIP_ROLES = ["DB | Leadership", "DB | Supervisor"]
 AGENT_ROLE = "NCIS | Agent"
 DEPLOYMENT_PING_ROLE = "NCIS | Agent"
 
@@ -34,7 +34,7 @@ def has_role(interaction: discord.Interaction, role_name: str):
     return any(role.name == role_name for role in interaction.user.roles)
 
 def is_leadership(interaction: discord.Interaction):
-    return has_role(interaction, LEADERSHIP_ROLE)
+    return any(role.name in LEADERSHIP_ROLES for role in interaction.user.roles)
 
 def is_agent(interaction: discord.Interaction):
     return has_role(interaction, AGENT_ROLE)
