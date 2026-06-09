@@ -33,8 +33,15 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 def has_role(interaction: discord.Interaction, role_name: str):
     return any(role.name == role_name for role in interaction.user.roles)
 
-def is_leadership(interaction: discord.Interaction):
-    return any(role.name in LEADERSHIP_ROLES for role in interaction.user.roles)
+@bot.event
+async def on_ready():
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands")
+    except Exception as e:
+        print(e)
+
+    print(f"Logged in as {bot.user}")
 
 def is_agent(interaction: discord.Interaction):
     return has_role(interaction, AGENT_ROLE)
