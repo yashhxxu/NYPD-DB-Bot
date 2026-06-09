@@ -181,6 +181,7 @@ async def incidentlog(
     agent_name: str,
     location: str,
     report: str,
+mugshot: discord.Attachment = None
     marker1: str = None,
     marker2: str = None,
     marker3: str = None,
