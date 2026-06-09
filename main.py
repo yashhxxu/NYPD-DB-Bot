@@ -33,22 +33,20 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 def has_role(interaction: discord.Interaction, role_name: str):
     return any(role.name == role_name for role in interaction.user.roles)
 
-@bot.event
-async def on_ready():
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} commands")
-    except Exception as e:
-        print(e)
-
-    print(f"Logged in as {bot.user}")
+def is_leadership(interaction: discord.Interaction):
+    return any(role.name in LEADERSHIP_ROLES for role in interaction.user.roles)
 
 def is_agent(interaction: discord.Interaction):
     return has_role(interaction, AGENT_ROLE)
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands.")
+    except Exception as e:
+        print(f"Sync error: {e}")
+
     print(f"Logged in as {bot.user}")
 
 @bot.tree.command(name="promote", description="Promote a member")
@@ -131,7 +129,12 @@ async def infract(
 
 @bot.tree.command(name="deployment", description="Issue an NCIS deployment")
 @app_commands.check(is_leadership)
-async def deployment(interaction: discord.Interaction, location: str, starting_time: str, notes: str):
+async def deployment(
+    interaction: discord.Interaction,
+    location: str,
+    starting_time: str,
+    notes: str
+):
     await interaction.response.defer()
 
     ping_role = discord.utils.get(interaction.guild.roles, name=DEPLOYMENT_PING_ROLE)
@@ -192,7 +195,11 @@ async def incidentlog(
 ):
     await interaction.response.defer()
 
-    markers = [marker1, marker2, marker3, marker4, marker5, marker6, marker7, marker8, marker9, marker10, marker11]
+    markers = [
+        marker1, marker2, marker3, marker4, marker5, marker6,
+        marker7, marker8, marker9, marker10, marker11
+    ]
+
     marker_text = ""
 
     for index, marker in enumerate(markers, start=1):
